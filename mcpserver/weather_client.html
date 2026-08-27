@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Alerts Client</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        label {
+            font-weight: bold;
+        }
+        input, select, button {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            padding: 10px;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #result {
+            white-space: pre-wrap;
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            min-height: 100px;
+        }
+        .status {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+        .connected {
+            background-color: #dff0d8;
+            color: #3c763d;
+        }
+        .disconnected {
+            background-color: #f2dede;
+            color: #a94442;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #4CAF50;
+            text-decoration: none;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        .error {
+            color: #a94442;
+            background-color: #f2dede;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Weather Alerts Client</h1>
+    
+    <div id="status" class="status disconnected">Disconnected</div>
+    <div id="error" class="error" style="display: none;"></div>
+    
+    <div class="container">
+        <div class="form-group">
+            <label for="state">Select State:</label>
+            <select id="state">
+                <option value="CA">California</option>
+                <option value="NY">New York</option>
+                <option value="TX">Texas</option>
+                <option value="FL">Florida</option>
+                <option value="WA">Washington</option>
+                <option value="OR">Oregon</option>
+                <option value="AZ">Arizona</option>
+                <option value="NV">Nevada</option>
+                <option value="UT">Utah</option>
+                <option value="CO">Colorado</option>
+            </select>
+        </div>
+        
+        <button id="getAlerts">Get Weather Alerts</button>
+        
+        <div class="form-group">
+            <label for="result">Results:</label>
+            <div id="result">No data yet. Click the button above to fetch weather alerts.</div>
+        </div>
+        
+        <a href="/" class="back-link">← Back to Home</a>
+    </div>
+
+    <script>
+        // Server URL - change this to match your server
+        const SERVER_URL = 'http://127.0.0.1:8000';
+        
+        // DOM elements
+        const statusElement = document.getElementById('status');
+        const resultElement = document.getElementById('result');
+        const getAlertsButton = document.getElementById('getAlerts');
+        const stateSelect = document.getElementById('state');
+        const errorElement = document.getElementById('error');
+        
+        // SSE connection
+        let eventSource = null;
+        
+        // Function to connect to SSE
+        function connectToSSE() {
+            try {
+                // Close existing connection if any
+                if (eventSource) {
+                    eventSource.close();
+                }
+                
+                // Create new connection
+                eventSource = new EventSource(`${SERVER_URL}/events`);
+                
+                // Handle connection open
+                eventSource.onopen = function() {
+                    statusElement.textContent = 'Connected to server';
+                    statusElement.className = 'status connected';
+                    getAlertsButton.disabled = false;
+                    errorElement.style.display = 'none';
+                };
+                
+                // Handle connection error
+                eventSource.onerror = function() {
+                    statusElement.textContent = 'Disconnected from server';
+                    statusElement.className = 'status disconnected';
+                    getAlertsButton.disabled = true;
+                    errorElement.textContent = 'Could not connect to the server. Make sure the MCP server is running on port 8000.';
+                    errorElement.style.display = 'block';
+                };
+                
+                // Handle messages from the server
+                eventSource.onmessage = function(event) {
+                    try {
+                        const data = JSON.parse(event.data);
+                        if (data.type === 'tool_result') {
+                            resultElement.textContent = data.content[0].text;
+                        }
+                    } catch (e) {
+                        console.error('Error parsing message:', e);
+                    }
+                };
+            } catch (e) {
+                console.error('Error connecting to SSE:', e);
+                errorElement.textContent = `Error: ${e.message}`;
+                errorElement.style.display = 'block';
+            }
+        }
+        
+        // Connect to SSE when page loads
+        connectToSSE();
+        
+        // Handle button click
+        getAlertsButton.addEventListener('click', function() {
+            const state = stateSelect.value;
+            resultElement.textContent = `Fetching weather alerts for ${state}...`;
+            
+            // Send a request to the server
+            fetch(`${SERVER_URL}/tool/get_alerts`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    arguments: {
+                        state: state
+                    }
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Server responded with status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data && data.content && data.content.length > 0) {
+                    resultElement.textContent = data.content[0].text;
+                } else {
+                    resultElement.textContent = "No data returned from the server.";
+                }
+            })
+            .catch(error => {
+                resultElement.textContent = `Error: ${error.message}`;
+                errorElement.textContent = `Could not fetch data from the server. Make sure the MCP server is running on port 8000.`;
+                errorElement.style.display = 'block';
+            });
+        });
+    </script>
+</body>
+</html> 

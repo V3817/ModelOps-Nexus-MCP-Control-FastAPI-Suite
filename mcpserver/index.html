@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Service</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+        }
+        .card {
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 500px;
+        }
+        .button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 4px;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 10px;
+        }
+        .button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <h1>Weather Service</h1>
+    
+    <div class="container">
+        <div class="card">
+            <h2>Weather Alerts Client</h2>
+            <p>Check weather alerts for different US states using our interactive client.</p>
+            <a href="weather_client.html" class="button">Open Weather Alerts Client</a>
+        </div>
+        
+        <div class="card">
+            <h2>API Documentation</h2>
+            <p>The weather service provides the following API endpoints:</p>
+            <ul style="text-align: left;">
+                <li><code>/tool/get_alerts?state=CA</code> - Get weather alerts for a state</li>
+                <li><code>/tool/get_forecast?latitude=37.7749&longitude=-122.4194</code> - Get forecast for coordinates</li>
+            </ul>
+            <p>You can also use the SSE endpoint for real-time updates:</p>
+            <ul style="text-align: left;">
+                <li><code>/events</code> - Server-Sent Events endpoint</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html> 
